@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "debug": "ndb server.js",
     "seed": "node config/seeder.js -i",
-    "seed:delete": "node config/seeder.js -d"
+    "seed:delete": "node config/seeder.js -d",
+    "drop-indexes": "node scripts/dropIndexes.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

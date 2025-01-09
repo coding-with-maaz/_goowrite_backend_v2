@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { dropUsernameIndex } = require('../utils/dbMigrations');
 
 const connectDatabase = async () => {
   try {
@@ -8,6 +9,9 @@ const connectDatabase = async () => {
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+    // Run migrations
+    await dropUsernameIndex();
 
     // Handle MongoDB connection errors
     mongoose.connection.on('error', (err) => {

@@ -1,13 +1,15 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
+    required: [true, 'Please provide your first name'],
     trim: true,
   },
   lastName: {
     type: String,
+    required: [true, 'Please provide your last name'],
     trim: true,
   },
   email: {
@@ -15,12 +17,12 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide your email'],
     unique: true,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'],
+    trim: true,
   },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
-    minlength: 8,
+    minlength: [8, 'Password must be at least 8 characters long'],
     select: false,
   },
   role: {
@@ -63,5 +65,34 @@ const userSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Pre-save middleware to hash password
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method to check password - renamed from comparePassword to correctPassword
+userSchema.methods.correctPassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Remove all indexes before creating the model
+mongoose.connection.on('connected', async () => {
+  try {
+    await mongoose.connection.collection('users').dropIndexes();
+    console.log('Dropped all indexes from users collection');
+  } catch (error) {
+    console.error('Error dropping indexes:', error);
+  }
+});
+
 const User = mongoose.model('User', userSchema);
+
 module.exports = User;

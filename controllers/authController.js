@@ -30,7 +30,7 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.register = catchAsync(async (req, res, next) => {
-  const { username, email, password, role } = req.body;
+  const { firstName, lastName, email, password } = req.body;
 
   // Check if email already exists
   const existingUser = await User.findOne({ email });
@@ -38,22 +38,29 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new AppError('Email already exists', 400));
   }
 
-  // Create user with default active status
+  // Create user
   const user = await User.create({
-    username,
+    firstName,
+    lastName,
     email,
     password,
-    role: role || 'user',
-    isActive: true,
-    status: 'active',
-    lastLogin: new Date(),
-    loginAttempts: 0
+    role: 'user',
+    active: true
   });
 
-  // Add initial login activity
-  await user.addActivity('login', 'Initial login after registration', req.ip, req.headers['user-agent']);
+  // Remove password from output
+  user.password = undefined;
 
-  createSendToken(user, 201, res);
+  // Generate token
+  const token = signToken(user._id);
+
+  res.status(201).json({
+    status: 'success',
+    token,
+    data: {
+      user
+    }
+  });
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -67,7 +74,7 @@ exports.login = catchAsync(async (req, res, next) => {
   // 2) Check if user exists && password is correct
   const user = await User.findOne({ email }).select('+password');
 
-  if (!user || !(await user.correctPassword(password, user.password))) {
+  if (!user || !(await user.correctPassword(password))) {
     return next(new AppError('Incorrect email or password', 401));
   }
 
