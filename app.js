@@ -97,6 +97,10 @@ app.use('/api/v1/contacts', contactRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/profile', profileRoutes);
 
+app.get('/', (req, res) => {
+  res.send('Hello World');
+});
+
 // Handle undefined routes
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
